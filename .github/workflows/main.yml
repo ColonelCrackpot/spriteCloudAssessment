@@ -1,53 +1,38 @@
-# .github/workflows/playwright.yml
-
 name: Playwright CI Tests
 
-# Controls when the workflow will run
 on:
   push:
-    branches: [ main, master ] # Adjust to your main branch name
-  pull_request:
-    branches: [ main, master ] # Adjust to your main branch name
-  workflow_dispatch: # Allows manual triggering from the Actions tab
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  playwright_tests: # You can name your job
+  playwright_tests:
     name: Run Playwright Tests
-    timeout-minutes: 15 # Max time for the job to run
-    runs-on: ubuntu-latest # Use the latest Ubuntu runner
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
 
     steps:
-      # 1. Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Check out code
         uses: actions/checkout@v4
 
-      # 2. Sets up Node.js in the runner
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18' # Specify your project's Node.js version
+          node-version: '18'
 
-      # 3. Installs project dependencies
-      #    'npm ci' is generally preferred for CI for faster, reliable builds using package-lock.json
-      #    Use 'npm install' if you don't have a package-lock.json or prefer that.
       - name: Install dependencies
         run: npm ci
 
-      # 4. Installs Playwright browsers and their OS dependencies
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      # 5. Runs your Playwright tests
-      #    This command will execute tests based on your playwright.config.ts
       - name: Run Playwright tests
         run: npx playwright test
 
-      # 6. Uploads the Playwright HTML report as an artifact (optional but recommended)
-      #    This step runs even if previous steps (like tests) fail, to ensure you always get a report.
       - name: Upload Playwright report
-        if: always() # Ensures this step runs regardless of test outcomes
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report # Name of the artifact
-          path: playwright-report/ # Default path to Playwright's HTML report
-          retention-days: 7 # How long to keep the report artifact
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
