@@ -11,13 +11,13 @@ test.beforeEach(async ({ page }) => {
 
   //Navigate and Login to SauceDemo
   await landingPage.navigateTo();
-  await loginPage.login();
+  await loginPage.login('standard_user', 'secret_sauce');
 
   //Assert Login was successfull
   await expect(page).toHaveURL('https://www.saucedemo.com/inventory.html');
 });
 
-test('1_Full_Checkout', async ({ page }) => {
+test(`1_Full_Checkout`, async ({ page }) => {
   //Initialize pages
   let landingPage = new LandingPage(page);
   let cartPage = new CartPage(page);
@@ -59,9 +59,40 @@ test('1_Full_Checkout', async ({ page }) => {
   await expect(page).toHaveURL('https://www.saucedemo.com/inventory.html');
 });
 
-test('2_List_Assertion', async ({ page }) => {
+test(`2_List_Assertion`, async ({ page }) => {
   //Initialize pages
   let landingPage = new LandingPage(page);
 
-  landingPage.sortProductsA_Z();
+  //Grab an initial list
+  const productList = await landingPage.grabProductsList();
+
+  //Assert A-Z order
+  await landingPage.sortProductsByOrderCode('az');
+  expect(await landingPage.grabProductsList()).toEqual(productList.sort());
+  
+  //Assert Z-A order
+  await landingPage.sortProductsByOrderCode('za');
+  expect(await landingPage.grabProductsList()).toEqual(productList.sort().reverse());
 });
+
+const loginErrorValidationList = [
+  { username: 'user1', password: '', expectedError: 'Password is required' },
+  { username: '', password: 'password2', expectedError: 'Username is required' },
+  { username: 'user1', password: 'password2', expectedError: 'Username and password do not match any user in this service' },
+];
+for (const testCase of loginErrorValidationList) {
+  test(`GIVEN the login screen WHEN a user submits invalid data THEN the error should show ${testCase.expectedError}`, async ({ page }) => {
+    //Initialize pages
+    let landingPage = new LandingPage(page);
+    let loginPage = new LoginPage(page);
+  
+    //Get back to the login page
+    await landingPage.clickLogoutButton();
+  
+    await loginPage.inputUserName(testCase.username);
+    await loginPage.inputPassword(testCase.password);
+    await loginPage.clickLoginButton();
+
+    await expect(await loginPage.getErrorText()).toContain(testCase.expectedError);
+  });
+}

@@ -5,11 +5,18 @@ export class LandingPage {
 
   readonly addItemToCart = '//div[@data-test="inventory-item-name" and (text())="{1}"]/../../..//button[contains(@id, "add-to-cart")]';
   readonly itemPrice = '//div[@data-test="inventory-item-name" and (text())="{1}"]/../../..//*[@class="inventory_item_price"]';
+  
+  readonly hamburgerMenuButton: Locator;
+  readonly logoutButton: Locator;
+  readonly products: Locator
   readonly sortProducts: Locator;
 
   constructor(page: Page) {
     this.page = page;
 
+    this.hamburgerMenuButton = this.page.locator('//*[@id="react-burger-menu-btn"]')
+    this.logoutButton = this.page.locator('//*[@id="logout_sidebar_link"]');
+    this.products = this.page.locator('//div[contains(@class, "item_name")]');
     this.sortProducts = this.page.locator('//*[@class="product_sort_container"]');
   }
 
@@ -33,7 +40,19 @@ export class LandingPage {
     return parseFloat(numericPrice)
   }
 
-  async sortProductsA_Z(){
-    await this.sortProducts.selectOption({value: 'za'})
+  async grabProductsList(): Promise<string[]> {
+    const names = await this.products.allTextContents();
+    return names.map(name => name.trim());
   }
+
+  async sortProductsByOrderCode(orderCode: string){
+    await this.sortProducts.selectOption({value: orderCode})
+    await this.page.waitForTimeout(500);
+  }
+
+  async clickLogoutButton(){
+    await this.hamburgerMenuButton.click();
+    await this.logoutButton.click();
+  }
+
 }
