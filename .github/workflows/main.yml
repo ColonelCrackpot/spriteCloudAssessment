@@ -1,68 +1,88 @@
-name: Playwright CI Tests
-
+name: Playwright-Tests
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
-  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  playwright_tests:
-    name: Run Playwright Tests
-    timeout-minutes: 5
+
+  setup-and-run-tests:
+    # setup and run the tests in parallel machines, with each machine uploading its own results to artifacts
+    # artifacts are shared between jobs and machines
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1/2, 2/2]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+
+    - name: Run Playwright tests
+      run: npx playwright test --shard ${{ matrix.shard }}
+
+    - name: Upload blob report to GitHub Actions Artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: merged-reports-as-blob
+        path: blob-report
+        retention-days: 14
+
+
+  merge-reports-and-upload:
+    if: always()
+    needs: [setup-and-run-tests]
     runs-on: ubuntu-latest
 
+    outputs:
+        timestamp: ${{ steps.timestampid.outputs.timestamp }}
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
+    - name: Set a timestamp
+      id: timestampid
+      run: echo "timestamp=$(date --utc +%Y%m%d_%H%M%SZ)" >> "$GITHUB_OUTPUT" 
 
-      - name: Install dependencies
-        run: |
-          npm ci
-          npx playwright install --with-deps
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+    - name: Install dependencies
+      run: npm ci
 
-      - name: Run Playwright tests
-        run: npx playwright test
+    - name: Download blob reports from GitHub Actions Artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: merged-reports-as-blob
+        path: downloaded-merged-reports-as-blob
 
-      - name: Check playwright-report contents before deploy
-        if: always() # Ensures this step runs to give you info
-        run: |
-          echo "Current working directory: $(pwd)"
-          echo "Workspace directory is: ${{ github.workspace }}"
-          echo "--- Listing contents of ${{ github.workspace }} ---"
-          ls -la ${{ github.workspace }}
-          echo "--- Checking for playwright-report directory at: ${{ github.workspace }}/playwright-report ---"
-          if [ -d "${{ github.workspace }}/playwright-report" ]; then
-            echo "playwright-report directory FOUND."
-            echo "--- Listing contents of ${{ github.workspace }}/playwright-report (ls -la) ---"
-            ls -la ${{ github.workspace }}/playwright-report
-            echo "--- Recursive listing of ${{ github.workspace }}/playwright-report (ls -laR) ---"
-            ls -laR ${{ github.workspace }}/playwright-report
-            echo "--- Checking specifically for index.html ---"
-            if [ -f "${{ github.workspace }}/playwright-report/index.html" ]; then
-              echo "playwright-report/index.html FOUND."
-            else
-              echo "playwright-report/index.html NOT FOUND."
-            fi
-          else
-            echo "playwright-report directory NOT FOUND at ${{ github.workspace }}/playwright-report"
-          fi
+    - name: Merge the blobs into one single HTML Report
+      run: npx playwright merge-reports --reporter html ./downloaded-merged-reports-as-blob
 
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 7
+    - name: /[OPTIONAL] Upload full html report to artifacts for history
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: playwright-report-${{ steps.timestampid.outputs.timestamp }}
+        path: playwright-report
+        retention-days: 14
 
-      - name: Deploy report to GitHub Pages
-        if: always() && github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./playwright-report
+    - name: Push the new files to github pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./playwright-report
+        destination_dir: ${{ steps.timestampid.outputs.timestamp }} 
+    - name: Write URL in summary
+      run: echo "### Test results (link available after 20 secs) - https://${{ github.repository_owner }}.github.io/playwright-example-with-typescript/${{ steps.timestampid.outputs.timestamp }}/" >> $GITHUB_STEP_SUMMARY
