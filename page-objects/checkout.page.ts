@@ -1,42 +1,49 @@
-import { Page, Locator} from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
+import { ui_url, checkoutCredentials } from '../config/ui_test.data'
 
 export class CheckoutPage {
   readonly page: Page;
 
+  //First page
   readonly p1FirstName: Locator;
   readonly p1LastName: Locator;
   readonly p1ZipCode: Locator;
   readonly p1ContinueButton: Locator;
 
+  //Second page
   readonly p2PriceTotalText: Locator;
   readonly p2FinishButton: Locator;
 
+  //Third page
   readonly p3ThankYouText: Locator;
   readonly p3BackHomeButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    
+
+    //First page
     this.p1FirstName = this.page.locator('//*[@id="first-name"]');
     this.p1LastName = this.page.locator('//*[@id="last-name"]');
     this.p1ZipCode = this.page.locator('//*[@id="postal-code"]');
     this.p1ContinueButton = this.page.locator('//*[@id="continue"]');
 
+    //Second page
     this.p2PriceTotalText = this.page.locator('//*[@class="summary_subtotal_label"]')
     this.p2FinishButton = this.page.locator('//*[@id="finish"]')
 
+    //Third page
     this.p3ThankYouText = this.page.locator('//*[@id="checkout_complete_container"]');
     this.p3BackHomeButton = this.page.locator('//*[@id="back-to-products"]');
   }
 
-  async navigateTo(){
-    await this.page.goto('https://www.saucedemo.com/checkout-step-one.html');
+  async navigateTo() {
+    await this.page.goto(`${ui_url}/checkout-step-one.html`);
   }
 
-  async CompletePage1(){
-    await this.inputFirstName('John');
-    await this.inputLastName('Doe');
-    await this.inputZipCode('1811GL');
+  async CompletePage1() {
+    await this.inputFirstName(checkoutCredentials.firstName);
+    await this.inputLastName(checkoutCredentials.firstName);
+    await this.inputZipCode(checkoutCredentials.firstName);
     await this.clickContinueButton();
   }
 
@@ -56,19 +63,22 @@ export class CheckoutPage {
     await this.p1ContinueButton.click();
   }
 
-  async getTotalPrice(): Promise<number>{
+  async getTotalPrice(): Promise<number> {
     //Grab the total price
     const totalPrice = await this.p2PriceTotalText.textContent();
+    //Throw an error if price is null
     if (totalPrice === null) throw new Error(`Price Total not found!`);
+    //Remove unnessessary text
     var numericTotal = totalPrice.replace('Item total: $', '').trim();
+    //Return the price as a float
     return parseFloat(numericTotal)
   }
 
-  async clickFinishButton(){
+  async clickFinishButton() {
     await this.p2FinishButton.click();
   }
 
-  async clickBackHomeButton(){
+  async clickBackHomeButton() {
     await this.p3BackHomeButton.click();
   }
 }

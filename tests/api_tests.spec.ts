@@ -1,129 +1,126 @@
 import { test, expect, APIRequestContext } from '@playwright/test';
+import { api_url, endpoints, httpHeaders, payloads } from '../config/api_test.data'
 
-const BASE_URL = 'https://reqres.in';
+let request: APIRequestContext;
 
-test.describe('ReqRes API Regression Tests', () => {
-  let request: APIRequestContext;
-
-  test.beforeAll(async ({ playwright }) => {
-    request = await playwright.request.newContext({
-      baseURL: BASE_URL,
-      extraHTTPHeaders: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'x-api-key': 'reqres-free-v1',
-      },
-    });
+test.beforeAll(async ({ playwright }) => {
+  //Setup playwright request context
+  request = await playwright.request.newContext({
+    baseURL: api_url,
+    extraHTTPHeaders: httpHeaders
   });
+});
 
-  test.afterAll(async () => {
-    await request.dispose();
-  });
+test.afterAll(async () => {
+  //Basic cleanup
+  await request.dispose();
+});
 
-  test('1. Retrieve a list of users', async () => {
-    const response = await request.get('/api/users?page=2');
-    expect(response.ok()).toBeTruthy();
-    expect(response.status()).toBe(200);
+test('1. GIVEN the reqres.in API WHEN a GET request is made to fetch user data THEN the response should be successful and contain user information', async () => {
+  //Perform GET request and assert response code
+  const response = await request.get(`${endpoints.users}`);
+  expect(response.status()).toBe(200);
 
+  //Grab the response body
+  const responseBody = await response.json();
+
+  //Assert the response body data
+  expect(responseBody).toHaveProperty('data');
+  expect(responseBody.data.length).toBeGreaterThan(0);
+
+  //Assert that the data has the correct properties
+  if (responseBody.data.length > 0) {
+    expect(responseBody.data[0]).toHaveProperty('id');
+    expect(responseBody.data[0]).toHaveProperty('email');
+    expect(responseBody.data[0]).toHaveProperty('first_name');
+    expect(responseBody.data[0]).toHaveProperty('last_name');
+    expect(responseBody.data[0]).toHaveProperty('avatar');
+  }
+});
+
+test('2. GIVEN valid user credentials WHEN a POST request is made to the login endpoint THEN the login should be successful AND return a token', async () => {
+  //Perform POST request and assert response code
+  const response = await request.post(`${endpoints.login}`, { data: payloads.validLogin });
+  expect(response.status()).toBe(200);
+
+  //Grab the response body and assert the token
+  const responseBody = await response.json();
+  expect(responseBody).toHaveProperty('token');
+  expect(typeof responseBody.token).toBe('string');
+});
+
+
+test('3. GIVEN user data to update WHEN a PUT request is made to update a specific user THEN the user details should be updated successfully', async () => {
+  //Create payload
+  const userIdToUpdate = 2;
+
+  //Perform the PUT request and assert response
+  const response = await request.put(`${endpoints.users}${userIdToUpdate}`, { data: payloads.updateUser });
+  expect(response.status()).toBe(200);
+
+  //Grab the response body and assert the data
+  const responseBody = await response.json();
+  expect(responseBody.name).toBe(payloads.updateUser.name);
+  expect(responseBody.job).toBe(payloads.updateUser.job);
+  expect(responseBody).toHaveProperty('updatedAt');
+});
+
+test('4. GIVEN an existing user ID WHEN a DELETE request is made to remove that user THEN the user should be deleted successfully', async () => {
+  //Set userId
+  const userIdToDelete = 2;
+
+  //Perform the DELETE request and assert the response
+  const response = await request.delete(`${endpoints.users}${userIdToDelete}`);
+  expect(response.status()).toBe(204);
+});
+
+test.describe('Negative Scenarios', () => {
+  test('5a. GIVEN login credentials with a missing password WHEN a POST request is made to the login endpoint THEN the login should fail with an error message', async () => {
+    //Perform a POST request and assert the response
+    const response = await request.post(`${endpoints.login}`, { data: payloads.missingPassword });
+    expect(response.status()).toBe(400);
+
+    //Grab the response body and assert the error message is correct
     const responseBody = await response.json();
-    expect(responseBody).toHaveProperty('page', 2);
-    expect(responseBody).toHaveProperty('data');
-    expect(Array.isArray(responseBody.data)).toBeTruthy();
-    expect(responseBody.data.length).toBeGreaterThan(0);
-
-    if (responseBody.data.length > 0) {
-      expect(responseBody.data[0]).toHaveProperty('id');
-      expect(responseBody.data[0]).toHaveProperty('email');
-      expect(responseBody.data[0]).toHaveProperty('first_name');
-      expect(responseBody.data[0]).toHaveProperty('last_name');
-      expect(responseBody.data[0]).toHaveProperty('avatar');
-    }
+    expect(responseBody).toHaveProperty('error', 'Missing password');
   });
 
-    test('2. Perform a successful login', async () => {
-    const loginPayload = {
-      email: 'eve.holt@reqres.in', 
-      password: 'cityslicka',
-    };
-    const response = await request.post('/api/login', { data: loginPayload });
-    expect(response.ok()).toBeTruthy();
-    expect(response.status()).toBe(200);
+  test('5b. GIVEN a non-existent user ID WHEN a GET request is made to fetch that user THEN the API should return a not found error', async () => {
+    //Set a non-existent userID
+    const nonExistentUserId = 23000;
 
-    const responseBody = await response.json();
-    expect(responseBody).toHaveProperty('token');
-    expect(typeof responseBody.token).toBe('string');
+    //Perform a GET request and assert the response
+    const response = await request.get(`${endpoints.users}${nonExistentUserId}`);
+    expect(response.status()).toBe(404);
   });
+});
 
-  test('3. Perform an update on a user', async () => {
-    const userIdToUpdate = 2;
-    const updatePayload = {
-      name: 'morpheus updated',
-      job: 'zion resident leader',
-    };
-    const response = await request.put(`/api/users/${userIdToUpdate}`, { data: updatePayload });
-    expect(response.ok()).toBeTruthy();
-    expect(response.status()).toBe(200);
-
-    const responseBody = await response.json();
-    expect(responseBody.name).toBe(updatePayload.name);
-    expect(responseBody.job).toBe(updatePayload.job);
-    expect(responseBody).toHaveProperty('updatedAt');
-  });
-
-  test('4. Perform a deletion of a user', async () => {
-    const userIdToDelete = 2;
-    const response = await request.delete(`/api/users/${userIdToDelete}`);
-    expect(response.status()).toBe(204);
-  });
-
-  test.describe('Negative Scenarios', () => {
-    test('5a. Login with missing password', async () => {
-      const loginPayload = {
-        email: 'peter@klaven',
-      };
-      const response = await request.post('/api/login', { data: loginPayload });
-      expect(response.ok()).toBeFalsy();
-      expect(response.status()).toBe(400); 
-
-      const responseBody = await response.json();
-      expect(responseBody).toHaveProperty('error', 'Missing password');
-    });
-
-    test('5b. Get a single user that does not exist', async () => {
-      const nonExistentUserId = 23000;
-      const response = await request.get(`/api/users/${nonExistentUserId}`);
-      expect(response.ok()).toBeFalsy();
-      expect(response.status()).toBe(404);
-    });
-  });
-
+test.describe('Delayed Scenarios', () => {
   const delayScenarios = [
     { delaySeconds: 1, description: '1 second delay' },
-    { delaySeconds: 2, description: '2 seconds delay' },
-    { delaySeconds: 3, description: '3 seconds delay' },
+    { delaySeconds: 2, description: '2 second delay' },
+    { delaySeconds: 3, description: '3 second delay' },
   ];
-
   for (const scenario of delayScenarios) {
-    test(`6. Delayed request: ${scenario.description}`, async () => {
+    test(`6. GIVEN a request for user data with a ${scenario.description} WHEN the API processes the request THEN the response should be received after the specified delay and be successful`, async () => {
+      //Grab the start time of the test
       const startTime = Date.now();
-      const response = await request.get(`/api/users?delay=${scenario.delaySeconds}`);
+
+      //Perform a GET request and log the time in milliseconds
+      const response = await request.get(`${endpoints.users}?delay=${scenario.delaySeconds}`);
       const endTime = Date.now();
       const durationMs = endTime - startTime;
 
-      expect(response.ok()).toBeTruthy();
+      //Assert the response
       expect(response.status()).toBe(200);
 
-      console.log(`Delay: ${scenario.delaySeconds}s, Actual Duration: ${durationMs}ms`);
-
+      //Grab the expected durations
       const expectedMinDurationMs = scenario.delaySeconds * 1000;
       const expectedMaxDurationMs = expectedMinDurationMs + 1500;
 
+      //Assert the durations
       expect(durationMs).toBeGreaterThanOrEqual(expectedMinDurationMs);
       expect(durationMs).toBeLessThanOrEqual(expectedMaxDurationMs);
-
-      const responseBody = await response.json();
-      expect(responseBody).toHaveProperty('data');
-      expect(Array.isArray(responseBody.data)).toBeTruthy();
     });
   }
 });

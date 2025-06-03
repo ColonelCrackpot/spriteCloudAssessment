@@ -1,4 +1,4 @@
-import { Page, Locator} from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 
 export class LoginPage {
   readonly page: Page;
@@ -11,14 +11,14 @@ export class LoginPage {
 
   constructor(page: Page) {
     this.page = page;
-    
+
     this.errorText = this.page.locator('//*[@data-test="error"]');
     this.usernameInput = this.page.locator('//*[@id="user-name"]');
     this.passwordInput = this.page.locator('//*[@id="password"]');
     this.loginButton = this.page.locator('//*[@id="login-button"]');
   }
 
-  async login(userName: string, password: string){
+  async login(userName: string, password: string) {
     await this.inputUserName(userName);
     await this.inputPassword(password);
     await this.clickLoginButton();
@@ -37,9 +37,13 @@ export class LoginPage {
   }
 
   async getErrorText(): Promise<string> {
+    //Wait half a second to allow time for the error text to appear
     await this.page.waitForTimeout(500);
+    //Grab the text content
     const errorText = await this.errorText.textContent();
+    //Throw a warning if the text content is null
     if (errorText === null) throw new Error(`Login Error text was not found`);
+    //Return the text
     return errorText;
   }
 }

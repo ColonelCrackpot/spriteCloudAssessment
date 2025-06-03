@@ -1,98 +1,97 @@
 import { test, expect } from '@playwright/test';
-import { LandingPage } from '../page_objects/landing.page';
-import { LoginPage } from '../page_objects/login.page';
-import { CartPage } from '../page_objects/cart.page';
-import { CheckoutPage } from '../page_objects/checkout.page';
+import { LandingPage } from '../page-objects/landing.page';
+import { LoginPage } from '../page-objects/login.page';
+import { CheckoutPage } from '../page-objects/checkout.page';
+import { ui_url } from '../config/ui_test.data'
 
 test.beforeEach(async ({ page }) => {
   //Initialize pages
-  let landingPage = new LandingPage(page);
-  let loginPage = new LoginPage(page);
+  const landingPage = new LandingPage(page);
+  const loginPage = new LoginPage(page);
 
   //Navigate and Login to SauceDemo
   await landingPage.navigateTo();
   await loginPage.login('standard_user', 'secret_sauce');
 
   //Assert Login was successfull
-  await expect(page).toHaveURL('https://www.saucedemo.com/inventory.html');
+  await expect(page).toHaveURL(`${ui_url}/inventory.html`);
 });
 
-test(`1_Full_Checkout`, async ({ page }) => {
+const shoppingItemLists = [
+  { items: ['Sauce Labs Backpack', 'Sauce Labs Bike Light'] },
+];
+for (const testCase of shoppingItemLists) {
+  test(`1 GIVEN the sauce demo website WHEN a user attempts to checkout ${testCase.items?.length} items THEN checkout should be successful`, async ({ page }) => {
+    //Initialize pages
+    const landingPage = new LandingPage(page);
+    const checkoutPage = new CheckoutPage(page);
+
+    //Create a list to store items added
+    const itemsAddedToCart: { name: string, price: number }[] = [];
+
+    //Add the items to the cart, while adding their price to the list
+    for (const itemName of testCase.items) {
+      const price = await landingPage.addToCartByName(itemName);
+      itemsAddedToCart.push({ name: itemName, price: price });
+    }
+    //Tally up the total
+    const expectedTotalPrice = itemsAddedToCart.reduce((sum, item) => sum + item.price, 0);
+
+    //Navigate to checkout and complete the first page
+    await checkoutPage.navigateTo();
+    await checkoutPage.CompletePage1();
+
+    //Grab the total price from the second page
+    const actualTotalPriceFromPage = await checkoutPage.getTotalPrice();
+
+    //Assert the prices are correct
+    expect(actualTotalPriceFromPage).toEqual(expectedTotalPrice);
+
+    //Complete checkout
+    await checkoutPage.clickFinishButton();
+    await checkoutPage.clickBackHomeButton();
+
+    //Assert the landing page reloads
+    await expect(page).toHaveURL(`${ui_url}/inventory.html`);
+  });
+}
+
+test(`2 GIVEN the landing screen WHEN the user filters by Z - A THEN the list should order correctly`, async ({ page }) => {
   //Initialize pages
-  let landingPage = new LandingPage(page);
-  let cartPage = new CartPage(page);
-  let checkoutPage = new CheckoutPage(page);
-
-  //List items to add to cart
-  const itemNamesToAdd = [
-    'Sauce Labs Backpack', 
-    'Sauce Labs Bike Light'
-  ];
-
-  //Create a list to store items added
-  const itemsAddedToCart: { name: string, price: number }[] = [];
-
-  //Add the items to the cart, while adding their price to the list
-  for (const itemName of itemNamesToAdd) {
-    const price = await landingPage.addToCartByName(itemName);
-    itemsAddedToCart.push({ name: itemName, price: price });
-  }
-  const expectedTotalPrice = itemsAddedToCart.reduce((sum, item) => sum + item.price, 0);
-
-  await cartPage.navigateTo();
-  await cartPage.clickCheckout();
-
-  await checkoutPage.CompletePage1();
-
-  const actualTotalPriceFromPage = await checkoutPage.getTotalPrice();
-
-  // Log for debugging (optional)
-  console.log(`Expected Total Price: ${expectedTotalPrice}`);
-  console.log(`Actual Total Price from Page: ${actualTotalPriceFromPage}`);
-
-  expect(actualTotalPriceFromPage).toEqual(expectedTotalPrice);
-  
-  await checkoutPage.clickFinishButton();
-
-  await checkoutPage.clickBackHomeButton();
-
-  await expect(page).toHaveURL('https://www.saucedemo.com/inventory.html');
-});
-
-test(`2_List_Assertion`, async ({ page }) => {
-  //Initialize pages
-  let landingPage = new LandingPage(page);
+  const landingPage = new LandingPage(page);
 
   //Grab an initial list
   const productList = await landingPage.grabProductsList();
 
-  //Assert A-Z order
+  //Assert A-Z order first to control list
   await landingPage.sortProductsByOrderCode('az');
   expect(await landingPage.grabProductsList()).toEqual(productList.sort());
-  
+
   //Assert Z-A order
   await landingPage.sortProductsByOrderCode('za');
   expect(await landingPage.grabProductsList()).toEqual(productList.sort().reverse());
 });
 
-const loginErrorValidationList = [
-  { username: 'user1', password: '', expectedError: 'Password is required' },
-  { username: '', password: 'password2', expectedError: 'Username is required' },
-  { username: 'user1', password: 'password2', expectedError: 'Username and password do not match any user in this service' },
-];
-for (const testCase of loginErrorValidationList) {
-  test(`GIVEN the login screen WHEN a user submits invalid data THEN the error should show ${testCase.expectedError}`, async ({ page }) => {
-    //Initialize pages
-    let landingPage = new LandingPage(page);
-    let loginPage = new LoginPage(page);
-  
-    //Get back to the login page
-    await landingPage.clickLogoutButton();
-  
-    await loginPage.inputUserName(testCase.username);
-    await loginPage.inputPassword(testCase.password);
-    await loginPage.clickLoginButton();
+test.describe('Negative Login Scenarios', () => {
+  const loginErrorValidationList = [
+    { description: 'a missing password', username: 'user1', password: '', expectedError: 'Password is required' },
+    { description: 'a missing user', username: '', password: 'password2', expectedError: 'Username is required' },
+    { description: 'incorrect user credentials', username: 'user1', password: 'password2', expectedError: 'Username and password do not match any user in this service' },
+  ];
+  for (const testCase of loginErrorValidationList) {
+    test(`3. GIVEN the login screen WHEN a user submits ${testCase.description} THEN the error should show ${testCase.expectedError}`, async ({ page }) => {
+      //Initialize pages
+      const landingPage = new LandingPage(page);
+      const loginPage = new LoginPage(page);
 
-    await expect(await loginPage.getErrorText()).toContain(testCase.expectedError);
-  });
-}
+      //Get back to the login page
+      await landingPage.clickLogoutButton();
+
+      await loginPage.inputUserName(testCase.username);
+      await loginPage.inputPassword(testCase.password);
+      await loginPage.clickLoginButton();
+
+      await expect(await loginPage.getErrorText()).toContain(testCase.expectedError);
+    });
+  }
+});

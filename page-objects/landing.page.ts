@@ -1,11 +1,12 @@
 import { Page, Locator, FrameLocator } from '@playwright/test';
+import { ui_url } from '../config/ui_test.data'
 
 export class LandingPage {
   readonly page: Page;
 
-  readonly addItemToCart = '//div[@data-test="inventory-item-name" and (text())="{1}"]/../../..//button[contains(@id, "add-to-cart")]';
-  readonly itemPrice = '//div[@data-test="inventory-item-name" and (text())="{1}"]/../../..//*[@class="inventory_item_price"]';
-  
+  readonly addItemToCart = '//*[normalize-space(.)="{1}"]/ancestor::*[contains(@class, "inventory_item")]//*[contains(@id, "add-to-cart")]';
+  readonly itemPrice = `//*[normalize-space(.)="{1}"]/ancestor::*[@class="inventory_item"]//*[@class="inventory_item_price"]`;
+
   readonly hamburgerMenuButton: Locator;
   readonly logoutButton: Locator;
   readonly products: Locator
@@ -21,7 +22,7 @@ export class LandingPage {
   }
 
   async navigateTo() {
-    await this.page.goto('https://www.saucedemo.com/');
+    await this.page.goto(`${ui_url}`);
   }
 
   async addToCartByName(itemName: string): Promise<number> {
@@ -41,16 +42,21 @@ export class LandingPage {
   }
 
   async grabProductsList(): Promise<string[]> {
+    //Grab the text content from the locator
     const names = await this.products.allTextContents();
+    //Return the mapped values
     return names.map(name => name.trim());
   }
 
-  async sortProductsByOrderCode(orderCode: string){
-    await this.sortProducts.selectOption({value: orderCode})
+  async sortProductsByOrderCode(orderCode: string) {
+    //Select a sorting option by the order code
+    await this.sortProducts.selectOption({ value: orderCode })
+    //Wait half a second to allow the page time to update
     await this.page.waitForTimeout(500);
   }
 
-  async clickLogoutButton(){
+  async clickLogoutButton() {
+    //Open the hamburger menu and click logout
     await this.hamburgerMenuButton.click();
     await this.logoutButton.click();
   }

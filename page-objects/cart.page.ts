@@ -1,4 +1,5 @@
 import { Page, Locator } from '@playwright/test';
+import { ui_url } from '../config/ui_test.data'
 
 export class CartPage {
   readonly page: Page;
@@ -12,7 +13,7 @@ export class CartPage {
   }
 
   async navigateTo() {
-    await this.page.goto('https://www.saucedemo.com/cart.html');
+    await this.page.goto(`${ui_url}/cart.html`);
   }
 
   async clickCheckout(){
