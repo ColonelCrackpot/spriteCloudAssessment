@@ -28,6 +28,30 @@ jobs:
       - name: Run Playwright tests
         run: npx playwright test
 
+      - name: Check playwright-report contents before deploy
+        if: always() # Ensures this step runs to give you info
+        run: |
+          echo "Current working directory: $(pwd)"
+          echo "Workspace directory is: ${{ github.workspace }}"
+          echo "--- Listing contents of ${{ github.workspace }} ---"
+          ls -la ${{ github.workspace }}
+          echo "--- Checking for playwright-report directory at: ${{ github.workspace }}/playwright-report ---"
+          if [ -d "${{ github.workspace }}/playwright-report" ]; then
+            echo "playwright-report directory FOUND."
+            echo "--- Listing contents of ${{ github.workspace }}/playwright-report (ls -la) ---"
+            ls -la ${{ github.workspace }}/playwright-report
+            echo "--- Recursive listing of ${{ github.workspace }}/playwright-report (ls -laR) ---"
+            ls -laR ${{ github.workspace }}/playwright-report
+            echo "--- Checking specifically for index.html ---"
+            if [ -f "${{ github.workspace }}/playwright-report/index.html" ]; then
+              echo "playwright-report/index.html FOUND."
+            else
+              echo "playwright-report/index.html NOT FOUND."
+            fi
+          else
+            echo "playwright-report directory NOT FOUND at ${{ github.workspace }}/playwright-report"
+          fi
+
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
