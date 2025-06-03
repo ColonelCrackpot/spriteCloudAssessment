@@ -11,10 +11,6 @@ jobs:
     # artifacts are shared between jobs and machines
     timeout-minutes: 15
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1/2, 2/2]
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
