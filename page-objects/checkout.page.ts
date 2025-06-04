@@ -1,5 +1,5 @@
-import { Page, Locator } from '@playwright/test';
-import { ui_url, checkoutCredentials } from '../config/ui_test.data'
+import { Page, Locator, expect } from '@playwright/test';
+import { url, checkoutCredentials } from '../config/ui_test.data'
 
 export class CheckoutPage {
   readonly page: Page;
@@ -37,15 +37,39 @@ export class CheckoutPage {
   }
 
   async navigateTo() {
-    await this.page.goto(`${ui_url}/checkout-step-one.html`);
+    await this.page.goto(`${url.base}${url.checkout}`);
   }
 
-  async CompletePage1() {
+  //Combined Methods
+
+  async completeCheckoutWithPaymentCheck(expectedTotalPrice: number) {
+    //Navigate to checkout and complete the first page
+    //The below could be turned into a method, however, given we are including a specific check for the price total, I have left this in the test
+    await this.navigateTo();
+    await this.completePage1();
+
+    //Grab the total price from the second page
+    const actualTotalPriceFromPage = await this.getTotalPrice();
+
+    //Assert the prices are correct
+    expect(actualTotalPriceFromPage).toEqual(expectedTotalPrice);
+
+    //Complete checkout
+    await this.clickFinishButton();
+    await this.clickBackHomeButton();
+
+    //Assert the landing page reloads
+    await expect(this.page).toHaveURL(`${url.base}${url.inventory}`);
+  }
+
+  async completePage1() {
     await this.inputFirstName(checkoutCredentials.firstName);
     await this.inputLastName(checkoutCredentials.firstName);
     await this.inputZipCode(checkoutCredentials.firstName);
     await this.clickContinueButton();
   }
+
+  //Base Methods
 
   async inputFirstName(firstName: string) {
     await this.p1FirstName.fill(firstName);
@@ -69,7 +93,7 @@ export class CheckoutPage {
     //Throw an error if price is null
     if (totalPrice === null) throw new Error(`Price Total not found!`);
     //Remove unnessessary text
-    var numericTotal = totalPrice.replace('Item total: $', '').trim();
+    let numericTotal = totalPrice.replace('Item total: $', '').trim();
     //Return the price as a float
     return parseFloat(numericTotal)
   }

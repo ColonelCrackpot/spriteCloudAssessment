@@ -11,11 +11,6 @@ test.beforeAll(async ({ playwright }) => {
   });
 });
 
-test.afterAll(async () => {
-  //Basic cleanup
-  await request.dispose();
-});
-
 test('1. GIVEN the reqres.in API WHEN a GET request is made to fetch user data THEN the response should be successful and contain user information', async () => {
   //Perform GET request and assert response code
   const response = await request.get(`${endpoints.users}`);
@@ -72,6 +67,7 @@ test('4. GIVEN an existing user ID WHEN a DELETE request is made to remove that 
   //Perform the DELETE request and assert the response
   const response = await request.delete(`${endpoints.users}${userIdToDelete}`);
   expect(response.status()).toBe(204);
+  //I would have liked to have added another test here to call the user, but regres.in does not actually delete the user, only returns the code
 });
 
 test.describe('Negative Scenarios', () => {

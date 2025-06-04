@@ -1,5 +1,5 @@
-import { Page, Locator, FrameLocator } from '@playwright/test';
-import { ui_url } from '../config/ui_test.data'
+import { Page, Locator } from '@playwright/test';
+import { url } from '../config/ui_test.data'
 
 export class LandingPage {
   readonly page: Page;
@@ -22,13 +22,13 @@ export class LandingPage {
   }
 
   async navigateTo() {
-    await this.page.goto(`${ui_url}`);
+    await this.page.goto(`${url.base}`);
   }
 
   async addToCartByName(itemName: string): Promise<number> {
     //Build paths
-    var addToCartButtonPath = await this.addItemToCart.replace('{1}', itemName);
-    var itemPricePath = await this.itemPrice.replace('{1}', itemName);
+    let addToCartButtonPath = await this.addItemToCart.replace('{1}', itemName);
+    let itemPricePath = await this.itemPrice.replace('{1}', itemName);
 
     //Add the item to the cart
     await this.page.locator(addToCartButtonPath).scrollIntoViewIfNeeded();
@@ -37,7 +37,7 @@ export class LandingPage {
     //Grab the item price
     const priceText = await this.page.locator(itemPricePath).textContent();
     if (priceText === null) throw new Error(`Price not found for ${itemName}`);
-    var numericPrice = priceText.replace('$', '');
+    let numericPrice = priceText.replace('$', '');
     return parseFloat(numericPrice)
   }
 

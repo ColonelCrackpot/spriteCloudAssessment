@@ -2,19 +2,16 @@ import { test, expect } from '@playwright/test';
 import { LandingPage } from '../page-objects/landing.page';
 import { LoginPage } from '../page-objects/login.page';
 import { CheckoutPage } from '../page-objects/checkout.page';
-import { ui_url } from '../config/ui_test.data'
+import { url, loginCredentials } from '../config/ui_test.data'
 
 test.beforeEach(async ({ page }) => {
   //Initialize pages
-  const landingPage = new LandingPage(page);
   const loginPage = new LoginPage(page);
 
   //Navigate and Login to SauceDemo
-  await landingPage.navigateTo();
-  await loginPage.login('standard_user', 'secret_sauce');
-
+  await loginPage.login(loginCredentials.firstName, loginCredentials.lastName);
   //Assert Login was successfull
-  await expect(page).toHaveURL(`${ui_url}/inventory.html`);
+  await expect(page).toHaveURL(`${url.base}${url.inventory}`);
 });
 
 const shoppingItemLists = [
@@ -37,22 +34,8 @@ for (const testCase of shoppingItemLists) {
     //Tally up the total
     const expectedTotalPrice = itemsAddedToCart.reduce((sum, item) => sum + item.price, 0);
 
-    //Navigate to checkout and complete the first page
-    await checkoutPage.navigateTo();
-    await checkoutPage.CompletePage1();
-
-    //Grab the total price from the second page
-    const actualTotalPriceFromPage = await checkoutPage.getTotalPrice();
-
-    //Assert the prices are correct
-    expect(actualTotalPriceFromPage).toEqual(expectedTotalPrice);
-
     //Complete checkout
-    await checkoutPage.clickFinishButton();
-    await checkoutPage.clickBackHomeButton();
-
-    //Assert the landing page reloads
-    await expect(page).toHaveURL(`${ui_url}/inventory.html`);
+    await checkoutPage.completeCheckoutWithPaymentCheck(expectedTotalPrice);
   });
 }
 
@@ -87,9 +70,7 @@ test.describe('Negative Login Scenarios', () => {
       //Get back to the login page
       await landingPage.clickLogoutButton();
 
-      await loginPage.inputUserName(testCase.username);
-      await loginPage.inputPassword(testCase.password);
-      await loginPage.clickLoginButton();
+      await loginPage.login(testCase.username, testCase.password);
 
       await expect(await loginPage.getErrorText()).toContain(testCase.expectedError);
     });

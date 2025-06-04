@@ -28,17 +28,25 @@ jobs:
       - name: Run Playwright tests
         run: npx playwright test
 
-      - name: Upload Playwright report
+      - name: Publish Test Report Summary (Dorny)
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Playwright Test Results
+          path: playwright-report/junit/junit-results.xml
+          reporter: junit
+
+      - name: Upload Playwright report artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-artifact
-          path: playwright-report/
+          path: playwright-report/html/
           retention-days: 7
 
-      - name: Deploy report to GitHub Pages
+      - name: Deploy HTML report to GitHub Pages
         if: always() && github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./playwright-report
+          publish_dir: ./playwright-report/html

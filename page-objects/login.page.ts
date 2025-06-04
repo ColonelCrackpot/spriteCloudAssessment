@@ -1,4 +1,5 @@
 import { Page, Locator } from '@playwright/test';
+import { url } from '../config/ui_test.data';
 
 export class LoginPage {
   readonly page: Page;
@@ -19,6 +20,7 @@ export class LoginPage {
   }
 
   async login(userName: string, password: string) {
+    this.page.goto(`${url.base}`)
     await this.inputUserName(userName);
     await this.inputPassword(password);
     await this.clickLoginButton();
