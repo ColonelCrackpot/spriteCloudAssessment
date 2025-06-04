@@ -14,45 +14,49 @@ test.beforeEach(async ({ page }) => {
   await expect(page).toHaveURL(`${url.base}${url.inventory}`);
 });
 
-const shoppingItemLists = [
-  { items: ['Sauce Labs Backpack', 'Sauce Labs Bike Light'] },
-];
-for (const testCase of shoppingItemLists) {
-  test(`1 GIVEN the sauce demo website WHEN a user attempts to checkout ${testCase.items?.length} items THEN checkout should be successful`, async ({ page }) => {
+test.describe('Checkout Scenarios', () => {
+  const shoppingItemLists = [
+    { items: ['Sauce Labs Backpack', 'Sauce Labs Bike Light'] },
+  ];
+  for (const testCase of shoppingItemLists) {
+    test(`1 GIVEN the sauce demo website WHEN a user attempts to checkout ${testCase.items?.length} items THEN checkout should be successful`, async ({ page }) => {
+      //Initialize pages
+      const landingPage = new LandingPage(page);
+      const checkoutPage = new CheckoutPage(page);
+
+      //Create a list to store items added
+      const itemsAddedToCart: { name: string, price: number }[] = [];
+
+      //Add the items to the cart, while adding their price to the list
+      for (const itemName of testCase.items) {
+        const price = await landingPage.addToCartByName(itemName);
+        itemsAddedToCart.push({ name: itemName, price: price });
+      }
+      //Tally up the total
+      const expectedTotalPrice = itemsAddedToCart.reduce((sum, item) => sum + item.price, 0);
+
+      //Complete checkout
+      await checkoutPage.completeCheckoutWithPaymentCheck(expectedTotalPrice);
+    });
+  }
+});
+
+test.describe('List Order Scenarios', () => {
+  test(`2 GIVEN the landing screen WHEN the user filters by Z - A THEN the list should order correctly`, async ({ page }) => {
     //Initialize pages
     const landingPage = new LandingPage(page);
-    const checkoutPage = new CheckoutPage(page);
 
-    //Create a list to store items added
-    const itemsAddedToCart: { name: string, price: number }[] = [];
+    //Grab an initial list
+    const productList = await landingPage.grabProductsList();
 
-    //Add the items to the cart, while adding their price to the list
-    for (const itemName of testCase.items) {
-      const price = await landingPage.addToCartByName(itemName);
-      itemsAddedToCart.push({ name: itemName, price: price });
-    }
-    //Tally up the total
-    const expectedTotalPrice = itemsAddedToCart.reduce((sum, item) => sum + item.price, 0);
+    //Assert A-Z order first to control list
+    await landingPage.sortProductsByOrderCode('az');
+    expect(await landingPage.grabProductsList()).toEqual(productList.sort());
 
-    //Complete checkout
-    await checkoutPage.completeCheckoutWithPaymentCheck(expectedTotalPrice);
+    //Assert Z-A order
+    await landingPage.sortProductsByOrderCode('za');
+    expect(await landingPage.grabProductsList()).toEqual(productList.sort().reverse());
   });
-}
-
-test(`2 GIVEN the landing screen WHEN the user filters by Z - A THEN the list should order correctly`, async ({ page }) => {
-  //Initialize pages
-  const landingPage = new LandingPage(page);
-
-  //Grab an initial list
-  const productList = await landingPage.grabProductsList();
-
-  //Assert A-Z order first to control list
-  await landingPage.sortProductsByOrderCode('az');
-  expect(await landingPage.grabProductsList()).toEqual(productList.sort());
-
-  //Assert Z-A order
-  await landingPage.sortProductsByOrderCode('za');
-  expect(await landingPage.grabProductsList()).toEqual(productList.sort().reverse());
 });
 
 test.describe('Negative Login Scenarios', () => {

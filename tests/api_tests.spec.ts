@@ -11,63 +11,65 @@ test.beforeAll(async ({ playwright }) => {
   });
 });
 
-test('1. GIVEN the reqres.in API WHEN a GET request is made to fetch user data THEN the response should be successful and contain user information', async () => {
-  //Perform GET request and assert response code
-  const response = await request.get(`${endpoints.users}`);
-  expect(response.status()).toBe(200);
+test.describe('Positive Scenarios', () => {
+  test('1. GIVEN the reqres.in API WHEN a GET request is made to fetch user data THEN the response should be successful and contain user information', async () => {
+    //Perform GET request and assert response code
+    const response = await request.get(`${endpoints.users}`);
+    expect(response.status()).toBe(200);
 
-  //Grab the response body
-  const responseBody = await response.json();
+    //Grab the response body
+    const responseBody = await response.json();
 
-  //Assert the response body data
-  expect(responseBody).toHaveProperty('data');
-  expect(responseBody.data.length).toBeGreaterThan(0);
+    //Assert the response body data
+    expect(responseBody).toHaveProperty('data');
+    expect(responseBody.data.length).toBeGreaterThan(0);
 
-  //Assert that the data has the correct properties
-  if (responseBody.data.length > 0) {
-    expect(responseBody.data[0]).toHaveProperty('id');
-    expect(responseBody.data[0]).toHaveProperty('email');
-    expect(responseBody.data[0]).toHaveProperty('first_name');
-    expect(responseBody.data[0]).toHaveProperty('last_name');
-    expect(responseBody.data[0]).toHaveProperty('avatar');
-  }
-});
+    //Assert that the data has the correct properties
+    if (responseBody.data.length > 0) {
+      expect(responseBody.data[0]).toHaveProperty('id');
+      expect(responseBody.data[0]).toHaveProperty('email');
+      expect(responseBody.data[0]).toHaveProperty('first_name');
+      expect(responseBody.data[0]).toHaveProperty('last_name');
+      expect(responseBody.data[0]).toHaveProperty('avatar');
+    }
+  });
 
-test('2. GIVEN valid user credentials WHEN a POST request is made to the login endpoint THEN the login should be successful AND return a token', async () => {
-  //Perform POST request and assert response code
-  const response = await request.post(`${endpoints.login}`, { data: payloads.validLogin });
-  expect(response.status()).toBe(200);
+  test('2. GIVEN valid user credentials WHEN a POST request is made to the login endpoint THEN the login should be successful AND return a token', async () => {
+    //Perform POST request and assert response code
+    const response = await request.post(`${endpoints.login}`, { data: payloads.validLogin });
+    expect(response.status()).toBe(200);
 
-  //Grab the response body and assert the token
-  const responseBody = await response.json();
-  expect(responseBody).toHaveProperty('token');
-  expect(typeof responseBody.token).toBe('string');
-});
+    //Grab the response body and assert the token
+    const responseBody = await response.json();
+    expect(responseBody).toHaveProperty('token');
+    expect(typeof responseBody.token).toBe('string');
+  });
 
 
-test('3. GIVEN user data to update WHEN a PUT request is made to update a specific user THEN the user details should be updated successfully', async () => {
-  //Create payload
-  const userIdToUpdate = 2;
+  test('3. GIVEN user data to update WHEN a PUT request is made to update a specific user THEN the user details should be updated successfully', async () => {
+    //Create payload
+    const userIdToUpdate = 2;
 
-  //Perform the PUT request and assert response
-  const response = await request.put(`${endpoints.users}${userIdToUpdate}`, { data: payloads.updateUser });
-  expect(response.status()).toBe(200);
+    //Perform the PUT request and assert response
+    const response = await request.put(`${endpoints.users}${userIdToUpdate}`, { data: payloads.updateUser });
+    expect(response.status()).toBe(200);
 
-  //Grab the response body and assert the data
-  const responseBody = await response.json();
-  expect(responseBody.name).toBe(payloads.updateUser.name);
-  expect(responseBody.job).toBe(payloads.updateUser.job);
-  expect(responseBody).toHaveProperty('updatedAt');
-});
+    //Grab the response body and assert the data
+    const responseBody = await response.json();
+    expect(responseBody.name).toBe(payloads.updateUser.name);
+    expect(responseBody.job).toBe(payloads.updateUser.job);
+    expect(responseBody).toHaveProperty('updatedAt');
+  });
 
-test('4. GIVEN an existing user ID WHEN a DELETE request is made to remove that user THEN the user should be deleted successfully', async () => {
-  //Set userId
-  const userIdToDelete = 2;
+  test('4. GIVEN an existing user ID WHEN a DELETE request is made to remove that user THEN the user should be deleted successfully', async () => {
+    //Set userId
+    const userIdToDelete = 2;
 
-  //Perform the DELETE request and assert the response
-  const response = await request.delete(`${endpoints.users}${userIdToDelete}`);
-  expect(response.status()).toBe(204);
-  //I would have liked to have added another test here to call the user, but regres.in does not actually delete the user, only returns the code
+    //Perform the DELETE request and assert the response
+    const response = await request.delete(`${endpoints.users}${userIdToDelete}`);
+    expect(response.status()).toBe(204);
+    //I would have liked to have added another test here to call the user, but regres.in does not actually delete the user, only returns the code
+  });
 });
 
 test.describe('Negative Scenarios', () => {
