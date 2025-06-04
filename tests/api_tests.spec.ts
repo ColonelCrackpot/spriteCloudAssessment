@@ -24,13 +24,34 @@ test.describe('Positive Scenarios', () => {
     expect(responseBody).toHaveProperty('data');
     expect(responseBody.data.length).toBeGreaterThan(0);
 
-    //Assert that the data has the correct properties
+    //Assert that the data has the correct properties and contain string values (not null or empty)
     if (responseBody.data.length > 0) {
-      expect(responseBody.data[0]).toHaveProperty('id');
-      expect(responseBody.data[0]).toHaveProperty('email');
-      expect(responseBody.data[0]).toHaveProperty('first_name');
-      expect(responseBody.data[0]).toHaveProperty('last_name');
-      expect(responseBody.data[0]).toHaveProperty('avatar');
+      const firstUser = responseBody.data[0];
+
+      //Id
+      expect(firstUser).toHaveProperty('id');
+      expect(typeof firstUser.id).toBe('number');
+      expect(firstUser.id).toBeGreaterThan(0);
+
+      //Email
+      expect(firstUser).toHaveProperty('email');
+      expect(typeof firstUser.email).toBe('string');
+      expect(firstUser.email.length).toBeGreaterThan(0);
+
+      //Frist name
+      expect(firstUser).toHaveProperty('first_name');
+      expect(typeof firstUser.first_name).toBe('string');
+      expect(firstUser.first_name.length).toBeGreaterThan(0);
+
+      //Last name
+      expect(firstUser).toHaveProperty('last_name');
+      expect(typeof firstUser.last_name).toBe('string');
+      expect(firstUser.last_name.length).toBeGreaterThan(0);
+
+      //Avatar
+      expect(firstUser).toHaveProperty('avatar');
+      expect(typeof firstUser.avatar).toBe('string');
+      expect(firstUser.avatar.length).toBeGreaterThan(0);
     }
   });
 
@@ -114,7 +135,8 @@ test.describe('Delayed Scenarios', () => {
 
       //Grab the expected durations
       const expectedMinDurationMs = scenario.delaySeconds * 1000;
-      const expectedMaxDurationMs = expectedMinDurationMs + 1500;
+      //Add a minor buffer to account for minor delays
+      const expectedMaxDurationMs = expectedMinDurationMs + 500;
 
       //Assert the durations
       expect(durationMs).toBeGreaterThanOrEqual(expectedMinDurationMs);

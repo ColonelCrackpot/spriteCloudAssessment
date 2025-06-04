@@ -4,10 +4,11 @@ This repo is used to house my submission for the spriteCloud assessment. Please 
 
 ## How to run the tests locally
 
-1. Ensure you have playwright[https://playwright.dev/] installed
-2. Clone this repo
-3. Navigate to the location you cloned to
-4. Run 'npx playwright test`
+1. Ensure you have node installed - https://nodejs.org/en
+2. Ensure you have playwright installed - https://playwright.dev/
+3. Clone this repo
+4. Navigate to the location you cloned to
+5. Run 'npx playwright test`
 
 ## Running the tests on Github
 
@@ -39,6 +40,16 @@ The tests included cover the below scenarios
     1. I chose two fairly simple examples, a failed login request along with an invalid user request
 6. Execute a parameterized delayed request (max 3 seconds) and evaluate how long the request takes.
     1. Similar to the UI tests I created test data to be passed through to allow different delays
+
+## Future improvements
+
+There are a bunch of improvements that could have been made. Some things I would have liked to have done but did not have the time to would be
+
+1. Creating a proper tooling script, providing proper common functionality
+2. Incorporated environment variables. From my understanding it should be fairly easy to implement this, but I thought of adding it too late, and would have added unnessary complexity for the simplicity of this repo.
+3. Done better pipeline reporting. I put a decent amount of effort into the current reporting, but I have not used github workflows before, and did not have the best experience. I believe what I have is quite good but I definitely could have done some neatening. I dislike the default html report.
+4. Better docker image. I would have liked to have implemented my own image solution, something that handles multiple browsers better than the existing playwright image. I get some warnings that are unnessary but did not have time to properly dig into this.
+5. Used better locators. Xpaths are my bread and butter, and while generally seen as inferior to ID locators, they can be even more secure when built correctly. Playwright does have its own solution to this but I do not believe it was as neat or easy to read as the xpaths I created, but I am sure with more investigation I could have found a neater implementation.
 
 ## Use of AI
 
