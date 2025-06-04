@@ -34,7 +34,7 @@ jobs:
         with:
           name: Playwright Test Results
           path: playwright-report/junit/junit-results.xml
-          reporter: junit
+          reporter: jest-junit
 
       - name: Upload Playwright report artifact
         if: always()
