@@ -14,11 +14,11 @@ Browser logs:
 ║ Workaround: Set the HOME=/root environment variable in your GitHub Actions workflow file when running Playwright. ║
 ╚═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 Call log:
-  - <launching> /ms-playwright/firefox-1482/firefox/firefox -no-remote -headless -profile /tmp/playwright_firefoxdev_profile-qyrniX -juggler-pipe -silent
-  - <launched> pid=623
-  - [pid=623][err] Running Nightly as root in a regular user's session is not supported.  ($HOME is /github/home which is owned by pwuser.)
-  - [pid=623] <process did exit: exitCode=1, signal=null>
-  - [pid=623] starting temporary directories cleanup
+  - <launching> /ms-playwright/firefox-1482/firefox/firefox -no-remote -headless -profile /tmp/playwright_firefoxdev_profile-wj0GZT -juggler-pipe -silent
+  - <launched> pid=644
+  - [pid=644][err] Running Nightly as root in a regular user's session is not supported.  ($HOME is /github/home which is owned by pwuser.)
+  - [pid=644] <process did exit: exitCode=1, signal=null>
+  - [pid=644] starting temporary directories cleanup
 
 ```
 
