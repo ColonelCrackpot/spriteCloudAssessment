@@ -23,6 +23,9 @@ jobs:
       - name: Run Playwright tests
         run: npx playwright test
 
+      - name: Mark workspace as safe for git commands
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Publish Test Report Summary (Dorny)
         uses: dorny/test-reporter@v2
         if: always()
