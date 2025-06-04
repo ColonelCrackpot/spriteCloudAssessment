@@ -50,3 +50,10 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./playwright-report/html
+
+      - name: Add HTML Report link to Job Summary
+        if: always() && steps.gh_pages_deploy.outcome == 'success'
+        run: |
+          echo "### Playwright HTML Report" >> $GITHUB_STEP_SUMMARY
+          echo "View the full HTML report deployed to GitHub Pages:" >> $GITHUB_STEP_SUMMARY
+          echo "[${{ steps.gh_pages_deploy.outputs.page_url }}](${{ steps.gh_pages_deploy.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
