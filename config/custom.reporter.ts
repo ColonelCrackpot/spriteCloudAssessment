@@ -1,16 +1,31 @@
-import { Reporter, TestCase } from '@playwright/test/reporter';
+import { Reporter, TestCase, Suite } from '@playwright/test/reporter';
 
-    class CustomReporter implements Reporter {
-        // Add browser name to test suite junit report
-        // this is needed to differentiate between same test file that runs on different browsers in the junit
-        onTestBegin(test: TestCase) {
-            const browserName = `[${test.parent.parent!.title}]`
-    
-            // change test suite name (for junit): test-folder/example.spec.ts [firefox]
-            test.parent.title = `${browserName} ${test.parent.title}`
-    
-            // change test case name: has title [firefox]
-            // test.title += ` ${browserName}`
+class CustomReporter implements Reporter {
+    private getProjectName(test: TestCase): string {
+        let currentSuite: Suite | undefined = test.parent;
+        while (currentSuite) {
+            if (currentSuite.project()) {
+                return currentSuite.project()!.name;
+            }
+            currentSuite = currentSuite.parent;
+        }
+        return 'unknown_project';
+    }
+
+    onTestBegin(test: TestCase) {
+        const projectName = this.getProjectName(test);
+        const browserTag = `[${projectName.trim()}]`;
+
+        if (test.parent && test.parent.title) {
+            if (!test.parent.title.endsWith(browserTag)) {
+                test.parent.title = `${test.parent.title} ${browserTag}`;
+            }
+        }
+
+        if (!test.title.endsWith(browserTag)) {
+            test.title = `${test.title} ${browserTag}`;
         }
     }
+}
+
 export default CustomReporter;
